@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace ECDictionary;
@@ -9,11 +10,19 @@ namespace ECDictionary;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private readonly SqliteConnection conn = new($"Data Source={Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)}\\tools\\ecdict.db;Mode=ReadOnly");
+    private readonly SqliteConnection connection = new($"Data Source={Config.DbPath};Mode=ReadOnly");
     private readonly ObservableCollection<WordInfo> words = [];
+    public static Dictionary<string, int> TableSchema { get; } = [];
     public MainWindow()
     {
-        conn.Open();
+        connection.Open();
+
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = $"PRAGMA table_info({Config.TableName});";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            TableSchema.Add(reader.GetString(1), reader.GetInt32(0));
+
         InitializeComponent();
         SwResults.ItemsSource = words;
         SearchBox.TextChanged += (_, _) =>
@@ -46,18 +55,17 @@ public partial class MainWindow : Window
 
         if (string.IsNullOrEmpty(word)) { WordResultContainer.Visibility = Visibility.Collapsed; return; }
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT * FROM stardict WHERE word = @word";
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = $"SELECT * FROM {Config.TableName} WHERE word = @word";
         cmd.Parameters.AddWithValue("@word", word);
 
         using var reader = cmd.ExecuteReader();
         if (reader.Read())
         {
             object[] infos = new object[reader.FieldCount];
-            for (int i = 0; i < reader.FieldCount; i++)
-                infos[i] = reader.GetValue(i);
-            bool?[] v = new bool?[reader.FieldCount];
-            v[0] = false; v[1] = false;
+            reader.GetValues(infos);
+            var v = WordInfo.DefaultVisibilities;
+            v["word"] = Visibility.Collapsed;
             WordResult.Content = new WordInfo(infos, v);
 
             WordResultContainer.Visibility = Visibility.Visible;
@@ -80,9 +88,17 @@ public partial class MainWindow : Window
 
         if (string.IsNullOrEmpty(sw)) return;
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT * FROM stardict WHERE sw = @sw";
-        cmd.Parameters.AddWithValue("@sw", sw);
+        using var cmd = connection.CreateCommand();
+        if (CJK().IsMatch(Word ?? ""))
+        {
+            cmd.CommandText = $"SELECT * FROM {Config.TableName} WHERE translation LIKE @sw";
+            cmd.Parameters.AddWithValue("@sw", $"%{Word}%");
+        }
+        else
+        {
+            cmd.CommandText = $"SELECT * FROM {Config.TableName} WHERE sw = @sw";
+            cmd.Parameters.AddWithValue("@sw", sw);
+        }
 
         using var reader = await cmd.ExecuteReaderAsync();
         while (reader.Read())
@@ -90,12 +106,13 @@ public partial class MainWindow : Window
             object[] infos = new object[reader.FieldCount];
             for (int i = 0; i < reader.FieldCount; i++)
                 infos[i] = reader.GetValue(i);
-            bool?[] v = new bool?[reader.FieldCount];
-            v[1] = false;
-            words.Add(new WordInfo(infos, v));
+            words.Add(new WordInfo(infos));
         }
     }
 
     private string? Word => SearchBox.Text.Trim();
     private string? Sw => Word != null ? new string([.. Word.Where(c => !char.IsPunctuation(c) && !char.IsSeparator(c))]).ToLower() : null;
+
+    [GeneratedRegex(@"\p{IsCJKUnifiedIdeographsExtensionA}|\p{IsCJKUnifiedIdeographs}")]
+    private static partial Regex CJK();
 }

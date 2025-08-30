@@ -4,24 +4,66 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ECDictionary"
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         mc:Ignorable="d"
         Title="EC Dictionary" Height="450" Width="800">
     <Window.Resources>
+        <Style TargetType="ProgressBar">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{x:Static SystemColors.HighlightBrush}"/>
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="Height" Value="12"/>
+        </Style>
         <DataTemplate x:Key="WordTemplate" DataType="local:WordInfo">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+
                 <StackPanel>
-                    <TextBlock x:Name="WordBlock" Text="{Binding Contents[0]}" Visibility="{Binding Visibilities[0]}" FontWeight="Bold" FontSize="30"/>
-                    <TextBlock x:Name="SwBlock" Text="{Binding Contents[1]}" Visibility="{Binding Visibilities[1]}"/>
-                    <TextBlock x:Name="PhoneticContainer" Visibility="{Binding Visibilities[2]}">[<TextBlock x:Name="PhoneticBlock" Text="{Binding Contents[2]}"/>]</TextBlock>
-                    <TextBlock x:Name="DefinitionBlock" Text="{Binding Contents[3]}" Visibility="{Binding Visibilities[3]}"/>
-                    <TextBlock x:Name="TranslationBlock" Text="{Binding Contents[4]}" Visibility="{Binding Visibilities[4]}"/>
-                    <TextBlock x:Name="PositionBlock" Text="{Binding Contents[5]}" Visibility="{Binding Visibilities[5]}"/>
-                    <TextBlock x:Name="BncBlock" Text="{Binding Contents[6]}" Visibility="{Binding Visibilities[6]}"/>
-                    <TextBlock x:Name="FrequencyBlock" Text="{Binding Contents[7]}" Visibility="{Binding Visibilities[7]}"/>
-                    <TextBlock x:Name="ExchangeBlock" Text="{Binding Contents[8]}" Visibility="{Binding Visibilities[8]}"/>
+                    <TextBlock x:Name="WordBlock" Text="{Binding Word}" Visibility="{Binding Visibilities[word]}" FontWeight="Bold" FontSize="30"/>
+                    <TextBlock x:Name="SwBlock" Text="{Binding Sw}" Visibility="{Binding Visibilities[sw]}"/>
+                    <TextBlock x:Name="PhoneticContainer" Visibility="{Binding Visibilities[phonetic]}">[<TextBlock x:Name="PhoneticBlock" Text="{Binding Phonetic}"/>]</TextBlock>
+                    <TextBlock x:Name="DefinitionBlock" TextWrapping="Wrap" Margin="0,0,0,3" Text="{Binding Definition}" Visibility="{Binding Visibilities[definition]}"/>
+                    <TextBlock x:Name="TranslationBlock" TextWrapping="Wrap" Margin="0,0,0,3" Text="{Binding Translation}" Visibility="{Binding Visibilities[translation]}"/>
+                    <Grid x:Name="BncContainer" Visibility="{Binding Visibilities[bnc]}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="BncLabel">BNC</TextBlock>
+                        <TextBlock x:Name="BncBlock" Text="{Binding Bnc}" Grid.Column="1"/>
+                        <ProgressBar x:Name="BncBar" Minimum="0" Maximum="50000" Value="{Binding Bnc}" Grid.Column="2"/>
+                    </Grid>
+                    <Grid x:Name="FrqContainer" Visibility="{Binding Visibilities[frq]}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="FrqLabel">FRQ</TextBlock>
+                        <TextBlock x:Name="FrqBlock" Text="{Binding Frq}" Grid.Column="1"/>
+                        <ProgressBar x:Name="FrqBar" Minimum="0" Maximum="47062" Value="{Binding Frq}" Grid.Column="2"/>
+                    </Grid>
+                    <TextBlock x:Name="ExchangeBlock" Text="{Binding Exchange}" Visibility="{Binding Visibilities[exchange]}"/>
+                    <ItemsControl ItemsSource="{Binding ExchangeList}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border>
+                                    <TextBlock Text="{Binding .}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
+
+                <lvc:PieChart x:Name="PosChart" Series="{Binding PosPie}" Width="150" Height="150" Grid.Column="1" Visibility="{Binding Visibilities[pos]}"/>
+            </Grid>
         </DataTemplate>
     </Window.Resources>
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
