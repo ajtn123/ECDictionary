@@ -1,5 +1,4 @@
-﻿using LiveChartsCore;
-using SQLitePCL;
+﻿using SQLitePCL;
 using System.Windows;
 
 namespace ECDictionary;
@@ -12,6 +11,5 @@ public partial class App : Application
     public App()
     {
         Batteries.Init();
-        LiveCharts.Configure(config => config.HasMap<(int, string)>((point, index) => new(index, point.Item1)));
     }
 }

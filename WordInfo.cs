@@ -1,8 +1,4 @@
-﻿using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView.Extensions;
-using LiveChartsCore.SkiaSharpView.Painting;
-using SkiaSharp;
-using System.Windows;
+﻿using System.Windows;
 
 namespace ECDictionary;
 
@@ -15,14 +11,7 @@ public class WordInfo
         Visibilities = (visibilities ?? DefaultVisibilities).ToDictionary(p => p.Key, p => p.Value ?? GetVisibility(GetContent(p.Key)));
 
         if (Pos != null)
-            PosPie = Pos.Split('/').Select(s => (int.TryParse(s.Split(':')[1], out int percentage) ? percentage : 0, s.Split(':')[0])).AsPieSeries((value, series) =>
-            {
-                series.AnimationsSpeed = TimeSpan.Zero;
-                series.MaxRadialColumnWidth = 60;
-                series.DataLabelsPaint = new SolidColorPaint(SKColors.Black);
-                series.ToolTipLabelFormatter = point => $"{PosNotations[value.Item2]}: {point.Coordinate.PrimaryValue}%";
-                series.DataLabelsFormatter = point => value.Item2;
-            });
+            Pos = string.Join("   ", Pos.Split('/').Select(s => $"{PosNotations[s.Split(':')[0]]}: {s.Split(':')[1]}%"));
 
         if (Exchange != null)
             Exchange = Exchange.Replace("/", "   ").Replace(":", ": ");
@@ -39,8 +28,6 @@ public class WordInfo
     public long? Bnc { get; set; }
     public long? Frq { get; set; }
     public string? Exchange { get; set; }
-
-    public IEnumerable<ISeries>? PosPie { get; }
 
     private static Visibility GetVisibility(object? content)
         => !string.IsNullOrWhiteSpace(content?.ToString()) ? Visibility.Visible : Visibility.Collapsed;
